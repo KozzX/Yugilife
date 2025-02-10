@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YugiLife</title>
+    <style>
+        @font-face {
+            font-family: 'ProtoSans';
+            src: url('/fonts/ProtoSans24.otf') format('opentype');
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .input-container {
+            position: absolute;
+            bottom: 10%;
+            width: 100%;
+            text-align: center;
+        }
+
+        input[type="number"] {
+            font-size: 250%;
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+        }
+
+        button {
+    font-size: 200%;
+    padding: 15px 20px;
+    margin: 20px;
+    background-color: black;
+    color: #d4ff00;
+    border: 3px solid #d4ff00;;
+    border-radius: 0px;
+    position: relative;
+    font-family: 'ProtoSans', Arial, sans-serif;
+    clip-path: polygon(20px 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20px);
+    cursor: pointer;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 30px;
+    background-color: #d4ff00;
+    transform: skew(-45deg);
+    z-index: 1;
+}
+button:active {
+    background-color: #d4ff00; /* Fundo amarelo em destaque */
+    color: black; /* Texto preto para contraste */
+    box-shadow: 0px 4px 12px rgba(255, 255, 0, 0.7); /* Sombra amarela brilhante */
+}
+
+button span {
+    position: relative;
+    z-index: 2;
+}
+
+        canvas {
+            font-family: 'ProtoSans', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="background" width="3000" height="3000" style="position: absolute; top: 0; left: 0;"></canvas>
+    <canvas id="canvas1" width="300" height="250" style="position: absolute; top: 0px; left: -300px;"></canvas>
+    <canvas id="canvas2" width="300" height="250" style="position: absolute; top: 0px; right: -300px;"></canvas>
+
+    <div class="input-container">
+        <button id="startButton">Iniciar</button>
+        <div>
+            <input type="number" id="inputValue1" value="1000" placeholder="Digite um número">
+            <button id="addButton1">Adicionar</button>
+            <button id="subtractButton1">Subtrair</button>
+            <button id="halfButton1">Dividir por 2</button>
+        
+
+        </div>
+        <div>
+            <input type="number" id="inputValue2" value="1000" placeholder="Digite um número">
+            <button id="addButton2">Adicionar</button>
+            <button id="subtractButton2">Subtrair</button>
+            <button id="halfButton2">Dividir por 2</button>
+        </div>
+    </div>
+
+    <script>
+        function loadFont(fontName, fontUrl) {
+            const font = new FontFace(fontName, `url(${fontUrl})`);
+            return font.load().then((loadedFont) => {
+                document.fonts.add(loadedFont);
+            });
+        }
+
+        function setupBackgroundEffect(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+
+            function drawRedOverlay(opacity) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = `rgba(255, 0, 0, ${opacity})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function drawBlueOverlay(opacity) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = `rgba(0, 0, 255, ${opacity})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            return {
+                triggerEffect: function (duration, type) {
+                    const frameRate = 60;
+                    const totalFrames = duration / (1000 / frameRate);
+                    let frame = 0;
+
+                    function update() {
+                        const opacity = Math.max(0, 0.8 - frame / totalFrames);
+                        if (type === "add") {
+                            drawBlueOverlay(opacity);
+                        } else if (type === "sub") {
+                            drawRedOverlay(opacity);
+                        }
+                        frame++;
+                        if (frame < totalFrames) {
+                            requestAnimationFrame(update);
+                        } else {
+                            drawBlueOverlay(0);
+                            drawRedOverlay(0);
+                        }
+                    }
+
+                    update();
+                },
+            };
+        }
+
+        const backgroundEffect = setupBackgroundEffect('background');
+
+        function setupCanvas(canvasId, inputId, addButtonId, subtractButtonId, halfButtonId, initialValue, isLeft, playerName) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+
+            let currentNumber = 0;
+            let targetNumber = initialValue;
+            let animatingText = null;
+
+            function drawNumber() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw player name background
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, 30);
+
+                
+
+                // Draw number background
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                if (isLeft) {
+                    ctx.lineTo(canvas.width, 0);
+                    ctx.lineTo(canvas.width, canvas.height /2 - 25);
+                    ctx.lineTo(canvas.width - 25, canvas.height /2);
+                } else {
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(0, canvas.height/2 - 25);
+                    ctx.lineTo(20, canvas.height/2);
+                    ctx.lineTo(canvas.width, canvas.height/2);
+                    ctx.lineTo(canvas.width, 0);
+                    ctx.lineTo(0, 0);
+                }
+                ctx.lineTo(0, canvas.height/2);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fill();
+
+                // Draw player name
+                ctx.font = '20px ProtoSans';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
+                ctx.fillText(playerName, canvas.width / 2, 15);
+                
+
+                // Draw number
+                ctx.font = '48px ProtoSans';
+                ctx.textAlign = 'top';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
+                ctx.fillText(currentNumber, canvas.width / 2, (canvas.height/2 + 30) / 2);
+
+                // Texto animado
+                if (animatingText) {
+                    ctx.globalAlpha = animatingText.opacity; // Aplica a opacidade
+                    ctx.fillStyle = animatingText.color;
+                    ctx.fillText(animatingText.value, canvas.width / 2, animatingText.y);
+                    ctx.globalAlpha = 1.0; // Restaura opacidade padrão
+                }
+            }
+
+            function animateToInitialNumber() {
+                const duration = 1000;
+                const frameRate = 60;
+                const totalFrames = duration / (1000 / frameRate);
+                const increment = targetNumber / totalFrames;
+                let frame = 0;
+
+                function update() {
+                    if (frame < totalFrames) {
+                        currentNumber = Math.min(targetNumber, Math.round(currentNumber + increment));
+                        drawNumber();
+                        frame++;
+                        requestAnimationFrame(update);
+                    } else {
+                        currentNumber = targetNumber;
+                        drawNumber();
+                    }
+                }
+
+                update();
+            }
+
+            drawNumber();
+
+            function animateNumberChange() {
+                const duration = 1000; // Duração da animação em milissegundos
+                const frameRate = 60; // Taxa de quadros por segundo
+                const totalFrames = duration / (1000 / frameRate);
+                const increment = (targetNumber - currentNumber) / totalFrames;
+
+                let frame = 0;
+
+                function update() {
+                    if (frame < totalFrames) {
+                        currentNumber += increment; // Atualiza o número principal
+                        currentNumber = Math.max(Math.round(currentNumber), 0);
+
+                        if (animatingText) {
+                            // Atualiza a posição vertical do texto animado
+                            animatingText.y -= (animatingText.y - canvas.height/2/2) / (totalFrames - frame);
+                            // Reduz gradualmente a opacidade
+                            animatingText.opacity = Math.max(0, animatingText.opacity - 1 / totalFrames);
+                        }
+
+                        drawNumber(); // Redesenha o canvas
+                        frame++;
+                        requestAnimationFrame(update); // Próximo quadro
+                    } else {
+                        currentNumber = Math.max(targetNumber, 0);
+                        animatingText = null; // Remove o texto animado
+                        drawNumber();
+                    }
+                }
+                update();
+            }
+
+
+            document.getElementById(addButtonId).addEventListener('click', () => {
+                const inputValue = parseInt(document.getElementById(inputId).value, 10);
+                if (!isNaN(inputValue)) {
+                    targetNumber += inputValue;
+                    animatingText = {
+                        value: `+${inputValue}`,
+                        y: canvas.height / 2 + 90,
+                        color: 'blue',
+                        opacity: 1 // Opacidade inicial
+                    };
+                    backgroundEffect.triggerEffect(1000, "add");
+                    animateNumberChange();
+                }
+            });
+
+            document.getElementById(subtractButtonId).addEventListener('click', () => {
+                const inputValue = parseInt(document.getElementById(inputId).value, 10);
+                if (!isNaN(inputValue)) {
+                    targetNumber -= inputValue;
+                    animatingText = {
+                        value: `-${inputValue}`,
+                        y: canvas.height / 2 + 90,
+                        color: 'red',
+                        opacity: 1 // Opacidade inicial
+                    };
+                    backgroundEffect.triggerEffect(2000, "sub");
+                    animateNumberChange();
+                }
+            });
+
+            document.getElementById(halfButtonId).addEventListener('click', () => {
+                const halfValue = Math.floor(currentNumber / 2);
+                if (halfValue !== currentNumber) {
+                    const decrementValue = currentNumber - halfValue;
+                    targetNumber = halfValue;
+                    animatingText = {
+                        value: `-${decrementValue}`,
+                        y: canvas.height / 2 + 90,
+                        color: 'red',
+                        opacity: 1 // Opacidade inicial
+                    };
+                    backgroundEffect.triggerEffect(1000, "sub");
+                    animateNumberChange();
+                }
+            });
+
+            animateToInitialNumber();
+        }
+
+        function startAnimation() {
+            loadFont('ProtoSans', '/fonts/ProtoSans24.otf').then(() => {
+                setupCanvas('canvas1', 'inputValue1', 'addButton1', 'subtractButton1', 'halfButton1', 8000, true, 'Kozz');
+                setupCanvas('canvas2', 'inputValue2', 'addButton2', 'subtractButton2', 'halfButton2', 8000, false, 'HDI-KUROSAKI');
+            });
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            const duration = 4000;
+            const frameRate = 60;
+            const totalFrames = duration / (5000 / frameRate);
+
+            let frame = 0;
+
+            function update() {
+                const progress = frame / totalFrames;
+                canvas1.style.left = `${-300 + progress * 300}px`;
+                canvas2.style.right = `${-300 + progress * 300}px`;
+
+                frame++;
+                if (frame <= totalFrames) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            update();
+        }
+        //startAnimation()
+        document.getElementById('startButton').addEventListener('click', startAnimation);
+    </script>
+</body>
+</html>
+

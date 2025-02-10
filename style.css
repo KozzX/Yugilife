@@ -1,0 +1,37 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+
+}
+#canvas1 {
+    border: 0px solid black;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 100%;
+    max-height: 100%;
+}
+input{
+    position: absolute;
+    padding: 5px;
+    font-size: 16px;
+}
+button{
+    position: absolute;
+    padding: 5px;
+    width: 50px;
+    height: 50px;
+    font-size: 16px;
+}
+
+#ship{
+    display: none;
+}
+#prop01{
+    display: none;
+}
+#prop02{
+    display: none;
+}
